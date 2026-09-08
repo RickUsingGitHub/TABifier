@@ -281,6 +281,10 @@ def _truetype(size, *names):
 
 @unittest.skipUnless(_have_numpy_pil(), "numpy/PIL not installed")
 class RasterTabTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        (HERE / "out").mkdir(parents=True, exist_ok=True)
+
     def _draw_bass_tab(self, path):
         from PIL import Image, ImageDraw, ImageFont
         im = Image.new("L", (700, 220), 225)
@@ -306,8 +310,11 @@ class RasterTabTests(unittest.TestCase):
         d.text((430, y0 - 8), "0", fill=0, font=font)
         d.text((550, y0 + 3 * g - 8), "1", fill=0, font=font)
         d.text((590, y0 + 3 * g - 8), "1", fill=0, font=font)
+        path.parent.mkdir(parents=True, exist_ok=True)
         im.save(path)
 
+    @unittest.skipUnless(sys.platform == "win32",
+                         "synthetic raster glyphs are tuned to Windows fonts")
     def test_synthetic_four_string_tab(self):
         from tab_read import Barline, raster_tab_events
         path = HERE / "out" / "_synth_bass_tab.png"
@@ -326,6 +333,8 @@ class RasterTabTests(unittest.TestCase):
         bars = sum(1 for _u, nn in events if isinstance(nn, Barline))
         self.assertGreaterEqual(bars, 2)
 
+    @unittest.skipUnless(sys.platform == "win32",
+                         "synthetic raster glyphs are tuned to Windows fonts")
     def test_four_string_image_on_guitar_pads_top_strings(self):
         from tab_read import raster_tab_events
         path = HERE / "out" / "_synth_bass_tab.png"
@@ -341,6 +350,8 @@ class RasterTabTests(unittest.TestCase):
         self.assertTrue(all(3 <= s <= 6 for s, _f in notes))
         self.assertFalse(any(s <= 2 for s, _f in notes))
 
+    @unittest.skipUnless(sys.platform == "win32",
+                         "synthetic raster glyphs are tuned to Windows fonts")
     def test_classify_rendered_digits(self):
         from PIL import Image, ImageDraw, ImageFont
         import numpy as np
@@ -356,6 +367,8 @@ class RasterTabTests(unittest.TestCase):
             got = classify_tab_digit(np.asarray(im) > 128)
             self.assertEqual(got, d, f"rendered {d} read as {got}")
 
+    @unittest.skipUnless(sys.platform == "win32",
+                         "synthetic raster glyphs are tuned to Windows fonts")
     def test_zero_on_staff_line_stays_zero(self):
         """Anti-aliased 0s sitting on a staff line used to split into 1 1."""
         from PIL import Image, ImageDraw, ImageFont
@@ -387,6 +400,8 @@ class RasterTabTests(unittest.TestCase):
         self.assertGreaterEqual(len(zeros), 6)
         self.assertGreaterEqual(len(zeros), len(ones))
 
+    @unittest.skipUnless(sys.platform == "win32",
+                         "synthetic raster glyphs are tuned to Windows fonts")
     def test_tab_clef_is_not_notes(self):
         from PIL import Image, ImageDraw, ImageFont
         from tab_read import raster_tab_events
@@ -502,6 +517,7 @@ class RasterTabTests(unittest.TestCase):
         """An A command's 7 numbers must not swallow the next command letter."""
         from svg_page import svg_to_pil
         path = HERE / "out" / "_synth_arc.svg"
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
             """<?xml version="1.0"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 80">
