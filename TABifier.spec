@@ -1,16 +1,28 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""One-file freeze of TABifier. Rebuild with:  python -m PyInstaller --noconfirm --clean TABifier.spec"""
+"""Freeze TABifier.
+
+Windows: one-file TABifier.exe
+  python -m PyInstaller --noconfirm --clean TABifier.spec
+
+Mac: TABifier.app (onedir bundle). Built on GitHub Actions macos-latest.
+"""
+
+import sys
+from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_all
 
+settings_file = (
+    "settings.json" if Path("settings.json").is_file()
+    else "settings.example.json"
+)
 datas = [
     ("kofi_qr.png", "."),
     ("kofi_button.png", "."),
-    ("settings.json", "."),
+    (settings_file, "."),
 ]
 binaries = []
 hiddenimports = [
-    "windnd",
     "tkinterdnd2",
     "numpy",
     "PIL",
@@ -27,9 +39,14 @@ hiddenimports = [
     "tab_write",
     "svg_page",
 ]
+if sys.platform == "win32":
+    hiddenimports.insert(0, "windnd")
 
 for pkg in ("tkinterdnd2", "pdfplumber", "pypdfium2", "pypdfium2_raw"):
-    d, b, h = collect_all(pkg)
+    try:
+        d, b, h = collect_all(pkg)
+    except Exception:
+        continue
     datas += d
     binaries += b
     hiddenimports += h
@@ -49,25 +66,71 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.datas,
-    [],
-    name="TABifier",
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=False,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=False,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon=["tabifier.ico"],
-    version="version_info.txt",
-)
+if sys.platform == "darwin":
+    icns = "tabifier.icns" if Path("tabifier.icns").is_file() else None
+    exe = EXE(
+        pyz,
+        a.scripts,
+        [],
+        exclude_binaries=True,
+        name="TABifier",
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=False,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=True,
+        target_arch=None,
+        codesign_identity="-",
+        entitlements_file=None,
+        icon=icns,
+    )
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        strip=False,
+        upx=False,
+        upx_exclude=[],
+        name="TABifier",
+    )
+    app = BUNDLE(
+        coll,
+        name="TABifier.app",
+        icon=icns,
+        bundle_identifier="org.tabifier.app",
+        version="1.04",
+        info_plist={
+            "CFBundleName": "TABifier",
+            "CFBundleDisplayName": "TABifier",
+            "CFBundleShortVersionString": "1.04",
+            "CFBundleVersion": "1.04",
+            "NSHighResolutionCapable": True,
+            "LSApplicationCategoryType": "public.app-category.music",
+        },
+    )
+else:
+    exe = EXE(
+        pyz,
+        a.scripts,
+        a.binaries,
+        a.datas,
+        [],
+        name="TABifier",
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=False,
+        upx_exclude=[],
+        runtime_tmpdir=None,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+        icon=["tabifier.ico"],
+        version="version_info.txt",
+    )

@@ -36,23 +36,52 @@ from tab_model import (  # noqa: F401
 )
 from tab_read import guess_title  # noqa: F401
 
-AUDIVERIS_CANDIDATES = [
-    Path(r"C:\Program Files\Audiveris\Audiveris.exe"),
-    Path(r"C:\Program Files\Audiveris\bin\Audiveris.exe"),
-]
+def _musescore_candidates():
+    if sys.platform == "darwin":
+        names = (
+            "MuseScore 4.app/Contents/MacOS/mscore",
+            "MuseScore 4.app/Contents/MacOS/MuseScore 4",
+            "MuseScore 3.app/Contents/MacOS/mscore",
+        )
+        out = []
+        for root in (Path("/Applications"), Path.home() / "Applications"):
+            out.extend(root / n for n in names)
+        return out
+    if sys.platform == "win32":
+        return [
+            Path(r"C:\Program Files\MuseScore 4\bin\MuseScore4.exe"),
+            Path(r"C:\Program Files\MuseScore 3\bin\MuseScore3.exe"),
+        ]
+    return [Path(p) for p in (
+        "/usr/bin/mscore4", "/usr/bin/mscore",
+        "/usr/bin/musescore4", "/usr/bin/musescore")]
 
-MUSESCORE_CANDIDATES = [
-    Path(r"C:\Program Files\MuseScore 4\bin\MuseScore4.exe"),
-    Path(r"C:\Program Files\MuseScore 3\bin\MuseScore3.exe"),
-]
+def _audiveris_candidates():
+    if sys.platform == "darwin":
+        return [
+            Path("/Applications/Audiveris.app/Contents/MacOS/Audiveris"),
+            Path.home() / "Applications/Audiveris.app/Contents/MacOS/Audiveris",
+        ]
+    if sys.platform == "win32":
+        return [
+            Path(r"C:\Program Files\Audiveris\Audiveris.exe"),
+            Path(r"C:\Program Files\Audiveris\bin\Audiveris.exe"),
+        ]
+    return []
 
-def find_exe(candidates, name):
+MUSESCORE_CANDIDATES = _musescore_candidates()
+AUDIVERIS_CANDIDATES = _audiveris_candidates()
+MUSESCORE_NAMES = ("MuseScore4", "mscore", "mscore4", "MuseScore3", "musescore")
+AUDIVERIS_NAMES = ("Audiveris", "audiveris")
+
+def find_exe(candidates, *names):
     for p in candidates:
         if p.exists():
             return p
-    found = shutil.which(name)
-    if found:
-        return Path(found)
+    for name in names:
+        found = shutil.which(name)
+        if found:
+            return Path(found)
     return None
 
 # ------------------------------------------------------- helper app setup
@@ -61,8 +90,13 @@ TESSDATA_URL = ("https://raw.githubusercontent.com/tesseract-ocr/"
                 "tessdata/main/eng.traineddata")
 
 def tessdata_file():
-    return (Path(os.environ.get("APPDATA", str(Path.home())))
-            / "AudiverisLtd" / "audiveris" / "config" / "tessdata"
+    if sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    elif sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA", str(Path.home())))
+    else:
+        base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    return (base / "AudiverisLtd" / "audiveris" / "config" / "tessdata"
             / "eng.traineddata")
 
 def check_dependencies(omr=False):
@@ -74,11 +108,11 @@ def check_dependencies(omr=False):
     """
     deps = {
         "MuseScore (turns music into PDFs)":
-            find_exe(MUSESCORE_CANDIDATES, "MuseScore4") is not None,
+            find_exe(MUSESCORE_CANDIDATES, *MUSESCORE_NAMES) is not None,
     }
     if omr:
         deps["Audiveris (reads scanned sheet music)"] = (
-            find_exe(AUDIVERIS_CANDIDATES, "Audiveris") is not None)
+            find_exe(AUDIVERIS_CANDIDATES, *AUDIVERIS_NAMES) is not None)
         deps["OCR language data (reads lyrics and text)"] = (
             tessdata_file().exists())
     return deps
@@ -105,6 +139,33 @@ def _winget_install(pkg_id, name):
     print(f"  {name} install failed (exit {proc.returncode}):\n{tail}")
     return False
 
+def _brew_bin():
+    for p in (Path("/opt/homebrew/bin/brew"), Path("/usr/local/bin/brew")):
+        if p.exists():
+            return str(p)
+    return shutil.which("brew")
+
+def _brew_install_cask(cask, name):
+    brew = _brew_bin()
+    if not brew:
+        print(f"  Homebrew is not installed; download {name} from "
+              "https://musescore.org/download")
+        return False
+    print(f"Installing {name} with Homebrew...", flush=True)
+    try:
+        proc = subprocess.run(
+            [brew, "install", "--cask", cask],
+            capture_output=True, text=True, timeout=900)
+    except subprocess.TimeoutExpired:
+        print(f"  {name} installation timed out")
+        return False
+    if proc.returncode == 0:
+        print(f"  {name} installed.")
+        return True
+    tail = "\n".join(((proc.stdout or "") + (proc.stderr or "")).splitlines()[-5:])
+    print(f"  {name} install failed (exit {proc.returncode}):\n{tail}")
+    return False
+
 def install_dependencies(omr=False):
     """Install whatever check_dependencies reports missing. Returns True
     when everything is present afterwards.
@@ -117,12 +178,22 @@ def install_dependencies(omr=False):
         print("All helper apps are already installed.")
         return True
     if not deps["MuseScore (turns music into PDFs)"]:
-        _winget_install("Musescore.Musescore", "MuseScore")
+        if sys.platform == "win32":
+            _winget_install("Musescore.Musescore", "MuseScore")
+        elif sys.platform == "darwin":
+            _brew_install_cask("musescore", "MuseScore")
+        else:
+            print("  install MuseScore from https://musescore.org/download")
     if omr:
         omr_deps = check_dependencies(omr=True)
         if not omr_deps["Audiveris (reads scanned sheet music)"]:
-            _winget_install("audiveris.org.Audiveris", "Audiveris")
-        if (find_exe(AUDIVERIS_CANDIDATES, "Audiveris") is not None
+            if sys.platform == "win32":
+                _winget_install("audiveris.org.Audiveris", "Audiveris")
+            else:
+                print("  download Audiveris from "
+                      "https://github.com/Audiveris/audiveris/releases "
+                      "and install it (Mac: put Audiveris.app in /Applications).")
+        if (find_exe(AUDIVERIS_CANDIDATES, *AUDIVERIS_NAMES) is not None
                 and not tessdata_file().exists()):
             print("Downloading OCR language data (about 23 MB)...", flush=True)
             target = tessdata_file()
@@ -177,7 +248,7 @@ def rasterize_pdf(path: Path, workdir: Path, dpi=300):
 
 def run_audiveris(input_path: Path, workdir: Path, *, raster_retry=True) -> Path:
     """Run Audiveris on a PDF/image, return path to the exported .mxl."""
-    exe = find_exe(AUDIVERIS_CANDIDATES, "Audiveris")
+    exe = find_exe(AUDIVERIS_CANDIDATES, *AUDIVERIS_NAMES)
     if exe is None:
         raise TabError(
             "reading a scan needs Audiveris (the free sheet-music reader). "
@@ -439,10 +510,11 @@ def postprocess_mscx(tabbed_xml: Path, workdir: Path, compact=False,
     return mscx
 
 def musescore_convert(src: Path, dst: Path):
-    exe = find_exe(MUSESCORE_CANDIDATES, "MuseScore4")
+    exe = find_exe(MUSESCORE_CANDIDATES, *MUSESCORE_NAMES)
     if exe is None:
         raise TabError("MuseScore not found. Install it from musescore.org "
-                       "or: winget install Musescore.Musescore")
+                       "(Windows: winget install Musescore.Musescore; "
+                       "Mac: brew install --cask musescore)")
     proc = subprocess.run([str(exe), "-f", "-o", str(dst), str(src)],
                           capture_output=True, text=True, timeout=300)
     if not dst.exists() and not list(dst.parent.glob(dst.stem + "-*" + dst.suffix)):

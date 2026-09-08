@@ -1,0 +1,100 @@
+name: Mac build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "**.py"
+      - "TABifier.spec"
+      - "requirements.txt"
+      - ".github/workflows/macos.yml"
+      - "tabifier.ico"
+      - "kofi_*.png"
+      - "settings.example.json"
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python with Tk
+        run: |
+          brew install python@3.12 python-tk@3.12
+          echo "$(brew --prefix python@3.12)/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Tk
+        run: python3.12 -c "import tkinter; print('tk', tkinter.TkVersion)"
+
+      - name: Virtualenv and deps
+        run: |
+          python3.12 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -r requirements.txt pyinstaller pillow
+          .venv/bin/python -m pip install tkinterdnd2 || true
+
+      - name: Tests
+        run: .venv/bin/python -m unittest tests.test_parse tests.test_write
+
+      - name: App icon
+        run: |
+          .venv/bin/python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          src = Image.open("tabifier.ico")
+          im = src.convert("RGBA")
+          if getattr(src, "n_frames", 1) > 1:
+              best = None
+              for i in range(src.n_frames):
+                  src.seek(i)
+                  frame = src.convert("RGBA")
+                  if best is None or frame.size[0] > best.size[0]:
+                      best = frame.copy()
+              im = best
+          iconset = Path("tabifier.iconset")
+          iconset.mkdir(exist_ok=True)
+          files = [
+              (16, "icon_16x16.png"),
+              (32, "icon_16x16@2x.png"),
+              (32, "icon_32x32.png"),
+              (64, "icon_32x32@2x.png"),
+              (128, "icon_128x128.png"),
+              (256, "icon_128x128@2x.png"),
+              (256, "icon_256x256.png"),
+              (512, "icon_256x256@2x.png"),
+              (512, "icon_512x512.png"),
+              (1024, "icon_512x512@2x.png"),
+          ]
+          for size, name in files:
+              im.resize((size, size), Image.LANCZOS).save(iconset / name)
+          PY
+          iconutil -c icns tabifier.iconset -o tabifier.icns
+
+      - name: Freeze
+        run: .venv/bin/python -m PyInstaller --noconfirm --clean TABifier.spec
+
+      - name: Sign and zip
+        run: |
+          test -d dist/TABifier.app
+          codesign --force --deep --sign - dist/TABifier.app
+          ditto -c -k --keepParent dist/TABifier.app TABifier-macOS-arm64.zip
+          ls -lh TABifier-macOS-arm64.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TABifier-macOS-arm64
+          path: TABifier-macOS-arm64.zip
+          if-no-files-found: error
+
+      - name: Attach to latest GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=$(gh release view --json tagName --jq .tagName)
+          test -n "$TAG"
+          gh release upload "$TAG" TABifier-macOS-arm64.zip --clobber

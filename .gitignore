@@ -6,6 +6,8 @@ __pycache__/
 build/
 dist/
 *.exe
+tabifier.icns
+tabifier.iconset/
 
 # local machine paths live here
 settings.json
@@ -13,6 +15,12 @@ settings.json
 tests/out/
 tests/external/out/
 tests/**/__pycache__/
+
+# bulky / third-party scans kept locally, not shipped
+tests/external/tank/
+tests/external/mutopia_*.pdf
+tests/external/imslp_*.pdf
+tests/Purple Rain*
 
 .grok/
 *.log

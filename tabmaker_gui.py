@@ -8,9 +8,9 @@ Three ways in, one way out:
   * type or paste ASCII TAB                  -> Score + TAB PDF
   * paste a chord chart with lyrics          -> Score + TAB PDF
 
-Runs as a plain script next to sheet2tab.py, or frozen as TABifier.exe
-(where the exe re-invokes itself with --engine for conversions and settings
-live in %APPDATA%/TABifier).
+Runs as a plain script next to sheet2tab.py, or frozen as TABifier.exe /
+TABifier.app (where the app re-invokes itself with --engine for conversions
+and settings live in the OS application-support folder).
 """
 
 import json
@@ -63,6 +63,27 @@ def resource_path(name):
     """Files bundled beside the script, or inside the frozen exe."""
     base = getattr(sys, "_MEIPASS", None)
     return Path(base) / name if base else Path(__file__).with_name(name)
+
+
+def open_os_path(path):
+    path = str(path)
+    if sys.platform == "win32":
+        os.startfile(path)
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", path])
+    else:
+        subprocess.Popen(["xdg-open", path])
+
+
+def _helper_install_blurb():
+    if sys.platform == "darwin":
+        return ("Install it now? If Homebrew is installed, TABifier will use "
+                "it; otherwise download MuseScore from musescore.org. "
+                "This can take a few minutes.")
+    if sys.platform == "win32":
+        return ("Install it now? Windows may show a permission prompt - "
+                "please allow it. This can take a few minutes.")
+    return "Install it now? This can take a few minutes."
 
 MAGIC_DEFAULTS = {"prefer_open_strings": 30, "stay_low": 25,
                   "avoid_jumps": 50, "max_stretch": 4}
@@ -1023,11 +1044,13 @@ class TabMakerApp:
             # drag-and-drop helper actually make it into the exe?
             report = os.environ.get("TABIFIER_SMOKE_REPORT")
             if report:
-                try:
-                    import windnd            # noqa: F401
-                    have_dnd = True
-                except ImportError:
-                    have_dnd = False
+                have_dnd = False
+                if sys.platform == "win32":
+                    try:
+                        import windnd            # noqa: F401
+                        have_dnd = True
+                    except ImportError:
+                        pass
                 with open(report, "w", encoding="utf-8") as fh:
                     print("qr=%s" % resource_path("kofi_qr.png").exists(),
                           file=fh)
@@ -1117,6 +1140,8 @@ class TabMakerApp:
                     pass
             if ok:
                 return
+        if sys.platform != "win32":
+            return
         try:
             import windnd
         except ImportError:
@@ -1237,8 +1262,7 @@ class TabMakerApp:
             "TABifier setup",
             "TABifier needs MuseScore (free) to print the finished page:\n\n  • "
             + "\n  • ".join(missing)
-            + "\n\nInstall it now? Windows may show a permission prompt - "
-              "please allow it. This can take a few minutes.\n\n"
+            + "\n\n" + _helper_install_blurb() + "\n\n"
               "The scan reader is separate - TABifier will offer it if you "
               "open a photo of sheet music.")
         if wants:
@@ -1257,8 +1281,8 @@ class TabMakerApp:
             "TABifier setup",
             "Reading a scan of sheet music needs these free helpers:\n\n  • "
             + "\n  • ".join(missing)
-            + "\n\nInstall them now? Windows may show a permission prompt - "
-              "please allow it. Typed TAB and chord charts do not need this.")
+            + "\n\n" + _helper_install_blurb()
+            + " Typed TAB and chord charts do not need this.")
         if wants:
             self.run_setup(omr=True, retry=retry)
             return True
@@ -1537,11 +1561,11 @@ class TabMakerApp:
     # -------------------------------------------------------------- opens
     def open_pdf(self):
         if self.last_pdf and self.last_pdf.exists():
-            os.startfile(str(self.last_pdf))
+            open_os_path(self.last_pdf)
 
     def open_dir(self):
         if self.last_dir and self.last_dir.exists():
-            os.startfile(str(self.last_dir))
+            open_os_path(self.last_dir)
 
 
 def main():

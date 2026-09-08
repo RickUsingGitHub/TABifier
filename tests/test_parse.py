@@ -1,4 +1,5 @@
 """Parser tests against the fixtures in this folder. No MuseScore needed."""
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -247,6 +248,37 @@ def _have_numpy_pil():
         return False
 
 
+def _truetype(size, *names):
+    """Load a TrueType font from the usual OS folders, or raise OSError."""
+    from PIL import ImageFont
+    folders = []
+    if sys.platform == "win32":
+        folders.append(Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts")
+    elif sys.platform == "darwin":
+        folders.extend([
+            Path("/System/Library/Fonts/Supplemental"),
+            Path("/Library/Fonts"),
+            Path("/System/Library/Fonts"),
+        ])
+    else:
+        folders.extend([
+            Path("/usr/share/fonts/truetype/msttcorefonts"),
+            Path("/usr/share/fonts/truetype/liberation"),
+            Path("/usr/share/fonts/truetype/dejavu"),
+        ])
+    for folder in folders:
+        if not folder.is_dir():
+            continue
+        for name in names:
+            p = folder / name
+            if p.is_file():
+                try:
+                    return ImageFont.truetype(str(p), size)
+                except OSError:
+                    continue
+    raise OSError("no TrueType font found")
+
+
 @unittest.skipUnless(_have_numpy_pil(), "numpy/PIL not installed")
 class RasterTabTests(unittest.TestCase):
     def _draw_bass_tab(self, path):
@@ -260,7 +292,8 @@ class RasterTabTests(unittest.TestCase):
         for x in (40, 200, 360, 520, 660):
             d.line((x, y0, x, y0 + 3 * g), fill=30, width=2)
         try:
-            font = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 14)
+            font = _truetype(14, "arial.ttf", "Arial.ttf", "Helvetica.ttc",
+                             "LiberationSans-Regular.ttf", "DejaVuSans.ttf")
         except OSError:
             font = ImageFont.load_default()
         # E-string (bottom) open zeros in bar 1
@@ -313,7 +346,8 @@ class RasterTabTests(unittest.TestCase):
         import numpy as np
         from tab_read import classify_tab_digit
         try:
-            font = ImageFont.truetype(r"C:\Windows\Fonts\times.ttf", 18)
+            font = _truetype(18, "times.ttf", "Times New Roman.ttf",
+                             "Times.ttc", "LiberationSerif-Regular.ttf")
         except OSError:
             self.skipTest("Times font not installed")
         for d in range(10):
@@ -327,7 +361,8 @@ class RasterTabTests(unittest.TestCase):
         from PIL import Image, ImageDraw, ImageFont
         from tab_read import raster_tab_events
         try:
-            font = ImageFont.truetype(r"C:\Windows\Fonts\times.ttf", 16)
+            font = _truetype(16, "times.ttf", "Times New Roman.ttf",
+                             "Times.ttc", "LiberationSerif-Regular.ttf")
         except OSError:
             self.skipTest("Times font not installed")
         path = HERE / "out" / "_synth_zeros_tab.png"
@@ -356,8 +391,10 @@ class RasterTabTests(unittest.TestCase):
         from PIL import Image, ImageDraw, ImageFont
         from tab_read import raster_tab_events
         try:
-            font = ImageFont.truetype(r"C:\Windows\Fonts\times.ttf", 16)
-            big = ImageFont.truetype(r"C:\Windows\Fonts\timesbd.ttf", 18)
+            font = _truetype(16, "times.ttf", "Times New Roman.ttf",
+                             "Times.ttc", "LiberationSerif-Regular.ttf")
+            big = _truetype(18, "timesbd.ttf", "Times New Roman Bold.ttf",
+                            "Times.ttc", "LiberationSerif-Bold.ttf")
         except OSError:
             self.skipTest("Times font not installed")
         path = HERE / "out" / "_synth_tab_clef.png"

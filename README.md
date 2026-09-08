@@ -2,21 +2,27 @@
 
 © Rick & Dolly
 
-**[Download TABifier.exe](https://github.com/RickUsingGitHub/TABifier/releases/latest)** — one Windows file, no installer. Copy it anywhere; settings live in `%APPDATA%\TABifier`.
+**Windows:** [Download TABifier.exe](https://github.com/RickUsingGitHub/TABifier/releases/latest/download/TABifier.exe) — one file, no installer. Copy it anywhere; settings live in `%APPDATA%\TABifier`.
+
+**Mac (Apple Silicon):** [Download TABifier-macOS-arm64.zip](https://github.com/RickUsingGitHub/TABifier/releases/latest/download/TABifier-macOS-arm64.zip) — unzip, then right-click **TABifier.app** → Open the first time (macOS Gatekeeper asks because the app is not signed with an Apple developer ID). Settings live in `~/Library/Application Support/TABifier`. If macOS says the app is damaged, that is the quarantine flag from the download; in Terminal: `xattr -cr TABifier.app` and Open again.
 
 TABifier is free. If it saves you some typing, you can [buy us a coffee](https://ko-fi.com/TABifier).
 
 ## The easy way: the app
 
-Double-click **TABifier.exe** — a single self-contained file; copy it or
-make a shortcut anywhere you like (its settings live in
-`%APPDATA%\TABifier`, so they follow you).
+Double-click **TABifier.exe** (Windows) or **TABifier.app** (Mac). Copy it
+or make a shortcut anywhere you like — settings follow the user account,
+not the folder you put the app in.
 
-On a fresh PC, TABifier offers to install MuseScore (free) so it can print
-the finished page. Say yes, allow the Windows permission prompt, and watch
-the log; it takes a few minutes. The same can be run by hand with
-`TABifier.exe --engine --setup`. (`TAB Maker.bat` runs the same app from
-the Python scripts, for tinkering.)
+On a fresh machine, TABifier offers to install MuseScore (free) so it can
+print the finished page. On Windows, say yes and allow the permission
+prompt. On a Mac it uses Homebrew if you have it (`brew install --cask
+musescore`), otherwise download MuseScore from musescore.org. Watch the
+log; it takes a few minutes. The same can be run by hand with
+`TABifier.exe --engine --setup` or, from the Python scripts,
+`python sheet2tab.py --setup`. (`TAB Maker.bat` on Windows, or
+`TAB Maker.command` on a Mac, runs the same app from the scripts, for
+tinkering.)
 
 The scan reader (Audiveris, plus the OCR language data that lyrics need)
 is only offered when you open a photo or scan of sheet music. Typed TAB,
@@ -237,10 +243,15 @@ and `pdfplumber`; the exe has them built in):
 program over chord frames assigns strings and frets (or keeps yours from
 typed TAB) → [MuseScore](https://musescore.org) engraves the result.
 `tabmaker_gui.py` is a Tkinter front end that shells out to the engine.
-Both helper apps are free; installed via winget.
+Both helper apps are free; installed via winget on Windows, or Homebrew /
+musescore.org on a Mac.
 
 Parser and MusicXML tests (no MuseScore needed):
 
 ```
 python -m unittest tests.test_parse tests.test_write
 ```
+
+A Mac `.app` is built on GitHub Actions (`macos-latest`, Apple Silicon)
+and attached to the latest Release as `TABifier-macOS-arm64.zip`. It is
+ad-hoc signed, not notarized.

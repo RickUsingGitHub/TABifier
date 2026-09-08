@@ -65,18 +65,28 @@ COMBOS_ENUM_CAP = 400       # hard cap while enumerating one frame
 
 # ------------------------------------------------------------------ settings
 
+def _app_support_dir():
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "TABifier"
+    if sys.platform == "win32":
+        return Path(os.environ.get("APPDATA", str(Path.home()))) / "TABifier"
+    return Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "TABifier"
+
 def _settings_path():
-    """Dev runs keep settings next to the scripts; the frozen TABifier.exe
-    keeps them in %APPDATA%\\TABifier (seeded from the bundled copy) so they
-    survive wherever the exe is moved."""
+    """Dev runs keep settings next to the scripts; the frozen app keeps them
+    in the OS application-support folder (seeded from the bundled copy) so
+    they survive wherever the exe or .app is moved."""
     if getattr(sys, "frozen", False):
-        d = Path(os.environ.get("APPDATA", str(Path.home()))) / "TABifier"
+        d = _app_support_dir()
         d.mkdir(parents=True, exist_ok=True)
         p = d / "settings.json"
         if not p.exists():
-            bundled = Path(getattr(sys, "_MEIPASS", ".")) / "settings.json"
-            if bundled.exists():
-                shutil.copyfile(bundled, p)
+            meipass = Path(getattr(sys, "_MEIPASS", "."))
+            for name in ("settings.json", "settings.example.json"):
+                bundled = meipass / name
+                if bundled.exists():
+                    shutil.copyfile(bundled, p)
+                    break
         return p
     return Path(__file__).with_name("settings.json")
 
