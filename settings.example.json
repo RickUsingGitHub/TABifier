@@ -1,0 +1,26 @@
+{
+  "default_output_dir": "",
+  "default_instrument": "guitar",
+  "magic": {
+    "prefer_open_strings": 30,
+    "stay_low": 25,
+    "avoid_jumps": 50,
+    "max_stretch": 4
+  },
+  "custom_instruments": [
+    {
+      "name": "Drop D Guitar",
+      "tuning": "D2 A2 D3 G3 B3 E4",
+      "frets": 19,
+      "octave_up": true,
+      "clef": "treble"
+    },
+    {
+      "name": "Mandolin",
+      "tuning": "G3 D4 A4 E5",
+      "frets": 17,
+      "octave_up": false,
+      "clef": "treble"
+    }
+  ]
+}

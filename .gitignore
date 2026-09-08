@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+build/
+dist/
+*.exe
+
+# local machine paths live here
+settings.json
+
+tests/out/
+tests/external/out/
+tests/**/__pycache__/
+
+.grok/
+*.log

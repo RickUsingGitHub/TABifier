@@ -1,0 +1,60 @@
+External PDFs used to check TABifier against common sources.
+Public-domain / CC / self-made fixtures only.
+
+tank/Tank p1.jpg, Tank p2.jpg, Tank p3.jpg
+  Screenshots of an engraved 4-string TAB (rhythm stems under the staff).
+  Used to regression-test the raster TAB reader: faint 0s, TAB clef,
+  dotted rhythm, 4-string-on-guitar mapping.
+
+musescore_engraved_tab.pdf
+  MuseScore 4 export of our own guitar_riff TAB (vector staff + text frets).
+  Same family as a musescore.com / Songsterr-style TAB PDF.
+
+musescore_riff.svg
+  MuseScore 4 SVG export of the same guitar_riff TAB (paths + polylines).
+  Confirms SVG is accepted as a page image.
+
+ug_style_ascii_tab.pdf
+  Ultimate Guitar-style ASCII TAB, printed to a text-layer PDF (fpdf).
+  Stands in for "Print to PDF" from a browser tab page.
+
+ug_style_chord_chart.pdf
+  Ultimate Guitar-style chords-over-lyrics chart, same print-to-PDF route.
+  Contains an embedded riff, like a lot of real song pages.
+
+mutopia_aguado_op3n1.pdf
+  D. Aguado, 8 Petites Pieces Op.3 No.1
+  Mutopia / LilyPond, CC BY-SA 4.0
+  https://www.mutopiaproject.org/ftp/AguadoD/O3/aguado-op03n01/
+
+mutopia_sor_skole02.pdf
+  Fernando Sor, Guitar-Skole no. 2
+  Mutopia / LilyPond, CC
+  https://www.mutopiaproject.org/ftp/SorF/guitar-skole-no-02/
+
+mutopia_aguado_aminor.pdf
+  D. Aguado, A-minor study. Mutopia / LilyPond, CC BY-SA.
+
+mutopia_giuliani_op1n10.pdf
+  M. Giuliani, Etudes Op.1 No.10. Mutopia / LilyPond, CC BY-SA.
+  https://www.mutopiaproject.org/ftp/GiulianiM/O1/giuliani-op1n10/
+
+mutopia_giuliani_op50n01.pdf
+  M. Giuliani, Op.50 No.1. Mutopia / LilyPond, CC BY 3.0.
+  https://www.mutopiaproject.org/ftp/GiulianiM/O50/giuliani-op50n01/
+
+imslp_molitor_p21.pdf
+  Franz Simon Molitor, Guitar Sonata Op.7, scan page 21 (printed p.18)
+  Public domain (1806). Full scan is on Wikimedia Commons.
+
+mutopia_tarrega_adelita.pdf
+  F. Tarrega, Adelita. Mutopia / LilyPond, CC BY-SA 2.5
+  https://www.mutopiaproject.org/ftp/TarregaF/adelita/
+
+mutopia_carcassi_skole15.pdf
+  M. Carcassi, Guitar-Skole no. 15. Mutopia / LilyPond, CC
+  https://www.mutopiaproject.org/ftp/CarcassiM/guitar-skole-no-15/
+
+mutopia_stille_nacht.pdf
+  F. X. Gruber, Stille Nacht, voice + guitar (lyrics). Mutopia, PD
+  https://www.mutopiaproject.org/ftp/GruberFX/stille-orig/
